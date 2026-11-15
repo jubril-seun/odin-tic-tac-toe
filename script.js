@@ -1,15 +1,25 @@
 function Cell(){
     let value = "";
+    let winningCell = false;
 
     const addMarker = (playerMarker) => {
         value = playerMarker;
     }
 
-    const resetCell = () => value = "";
+    const resetCell = () => {
+        value = "";
+        winningCell = false;
+    }
 
     const getValue = () => value;
+    
+    const updateWinningCell = () => {
+        winningCell = true;
+    }
 
-    return {addMarker, getValue, resetCell};
+    const getWinningCell = () => winningCell;
+
+    return {addMarker, getValue, resetCell, getWinningCell, updateWinningCell};
 }
 
 function Gameboard() {
@@ -81,6 +91,9 @@ function gameController(PlayerOneName = "Player One", PlayerTwoName = "Player Tw
                 currentBoard[row][1].getValue() === activePlayer.marker &&
                 currentBoard[row][2].getValue() === activePlayer.marker
             ) {
+                currentBoard[row][0].updateWinningCell();
+                currentBoard[row][1].updateWinningCell();
+                currentBoard[row][2].updateWinningCell();
                 return true;
             } 
         }
@@ -91,6 +104,9 @@ function gameController(PlayerOneName = "Player One", PlayerTwoName = "Player Tw
                 currentBoard[1][column].getValue() === activePlayer.marker &&
                 currentBoard[2][column].getValue() === activePlayer.marker
             ) {
+                currentBoard[0][column].updateWinningCell();
+                currentBoard[1][column].updateWinningCell();
+                currentBoard[2][column].updateWinningCell();
                 return true;
             } 
         }
@@ -101,6 +117,9 @@ function gameController(PlayerOneName = "Player One", PlayerTwoName = "Player Tw
             currentBoard[2][0].getValue() === activePlayer.marker
 
         ) {
+            currentBoard[0][2].updateWinningCell() 
+            currentBoard[1][1].updateWinningCell() 
+            currentBoard[2][0].updateWinningCell()         
             return true;
         }
 
@@ -110,6 +129,9 @@ function gameController(PlayerOneName = "Player One", PlayerTwoName = "Player Tw
             currentBoard[2][2].getValue() === activePlayer.marker
 
         ) {
+            currentBoard[0][0].updateWinningCell() 
+            currentBoard[1][1].updateWinningCell() 
+            currentBoard[2][2].updateWinningCell() 
             return true;
         }
         
@@ -226,6 +248,19 @@ function screenController() {
         target.textContent = currentBoard[row][column].getValue();
         
     }
+
+    const winningBoard = () =>  {
+        const currentBoard = game.getBoard();
+
+        currentBoard.forEach((row, rowIndex) => {
+            row.forEach((cell, columnIndex) => {
+                if(cell.getWinningCell()){
+                    const cellBtn = boardDiv.querySelector(`[data-row="${rowIndex}"][data-column="${columnIndex}"]`);
+                    cellBtn.classList.add("winner");
+                }
+            })
+        })
+    }
     
     const updateAnnouncement = () => {
         gameText.textContent = game.getGameResults();
@@ -245,6 +280,7 @@ function screenController() {
 
        if(successfulMove){
             updateBoard(row, column, clickedCell);
+            winningBoard();
             updateAnnouncement();
             clickedCell.classList.remove("active");
             clickedCell.classList.add("inactive");
