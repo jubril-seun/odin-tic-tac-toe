@@ -1,11 +1,11 @@
 function Cell(){
-    let value = ".";
+    let value = "";
 
     const addMarker = (playerMarker) => {
         value = playerMarker;
     }
 
-    const resetCell = () => value = ".";
+    const resetCell = () => value = "";
 
     const getValue = () => value;
 
@@ -59,8 +59,8 @@ function gameController(PlayerOneName = "Player One", PlayerTwoName = "Player Tw
     const board = Gameboard();
 
     const players = [
-        {name: PlayerOneName, marker: 1},
-        {name: PlayerTwoName, marker: 2}
+        {name: PlayerOneName, marker: "X"},
+        {name: PlayerTwoName, marker: "O"}
     ];
 
     let activePlayer = players[0];
@@ -126,8 +126,11 @@ function gameController(PlayerOneName = "Player One", PlayerTwoName = "Player Tw
         });
     };
 
+    const defaultAnnouncement = `It's ${activePlayer.name}'s turn`
     let gameOver = false;
+    let gameResults = defaultAnnouncement;
 
+    const getGameResults = () => gameResults;
     const getGameOver = () => gameOver;
 
     const playRound = (row, column) => {
@@ -139,28 +142,28 @@ function gameController(PlayerOneName = "Player One", PlayerTwoName = "Player Tw
         const move = board.placeMarker(row, column, activePlayer.marker);
     
 
-        if(!move){
-            console.log("invalid move. Cell is taken");
-            console.log(`It's ${activePlayer.name}'s turn`);  
-            return
+        if(!move){ 
+            return false;
         } else if(checkWinner()) {
             gameOver = true;
-            console.log(`${activePlayer.name} wins`);
-            return;
+            gameResults = `${activePlayer.name} wins!`;
+            return true;
         } else if(checkDraw()) {
             gameOver = true;
-            console.log("It's a draw!");
-            return;
+            gameResults = "It's a draw!";
+            return true;
         } else {
             switchPlayers();
-            console.log(`It's ${activePlayer.name}'s turn`);
+            gameResults = `It's ${activePlayer.name}'s turn`;
+            return true;
         }  
     };
 
     const resetGame = () =>{
         board.resetBoard();
         gameOver = false;
-        activePlayer = players[0]
+        activePlayer = players[0];
+        gameResults = defaultAnnouncement;
     };
 
     return {
@@ -168,42 +171,92 @@ function gameController(PlayerOneName = "Player One", PlayerTwoName = "Player Tw
         getBoard: board.getBoard,
         playRound,
         getGameOver,
-        resetGame
+        resetGame,
+        getGameResults
     }
 }
 
 function screenController() {
 
     const boardDiv = document.createElement("div");
+    const gameText = document.createElement("p");
+
     const game = gameController();
+
+    gameText.classList.add("gameText");
+    gameText.textContent = game.getGameResults();
+    document.body.append(gameText);
+   
+
+    boardDiv.classList.add("gameboard");
+    document.body.append(boardDiv);
+
+    
 
 
     const renderBoard = () => {
-        boardDiv.classList.add("gameboard");
-        document.body.append(boardDiv);
+
+        boardDiv.replaceChildren();
 
         game.getBoard().forEach((row, rowIndex) => {
             row.forEach((cell, index) => {
                 const cellBtn = document.createElement("button");
                 cellBtn.classList.add("cell");
+                cellBtn.classList.add("active");
                 cellBtn.dataset.column = index;
                 cellBtn.dataset.row = rowIndex;
                 cellBtn.textContent = cell.getValue();
                 
                 boardDiv.appendChild(cellBtn);               
             });
-        })
+        });
     }
 
-    const updateScreen = () => {
+    renderBoard();
 
+    const resetBtn = document.createElement("button");
+    resetBtn.classList.add("reset-btn");
+    resetBtn.textContent = "Restart Game";
+    document.body.append(resetBtn);
+
+
+    const updateBoard = (row, column, target) => {
+        const currentBoard = game.getBoard();
+
+        target.textContent = currentBoard[row][column].getValue();
+        
+    }
+    
+    const updateAnnouncement = () => {
+        gameText.textContent = game.getGameResults();
     }
 
   boardDiv.addEventListener("click", (e) => {
-        console.log(e.target);
-    })
+        const clickedCell = e.target;
 
-    renderBoard();
+        if(!clickedCell.classList.contains("cell") || game.getGameOver()){
+            return;
+        };
+
+       const row = Number(clickedCell.dataset.row);
+       const column = Number(clickedCell.dataset.column);
+
+       const successfulMove = game.playRound(row, column);
+
+       if(successfulMove){
+            updateBoard(row, column, clickedCell);
+            updateAnnouncement();
+            clickedCell.classList.remove("active");
+            clickedCell.classList.add("inactive");
+       }
+
+    });
+
+    resetBtn.addEventListener("click", () => {
+        game.resetGame();
+        renderBoard();
+        updateAnnouncement();
+    });
 
 }
 
